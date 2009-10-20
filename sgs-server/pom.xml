@@ -70,6 +70,12 @@
       <groupId>com.projectdarkstar.tools.test</groupId>
       <artifactId>sgs-test-ext</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>net.orfjackal.dimdwarf</groupId>
+      <artifactId>dimdwarf-core</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <build>
