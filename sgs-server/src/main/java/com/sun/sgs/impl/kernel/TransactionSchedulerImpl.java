@@ -32,6 +32,7 @@ import com.sun.sgs.kernel.schedule.SchedulerRetryPolicy;
 import com.sun.sgs.impl.profile.ProfileCollectorHandle;
 import com.sun.sgs.impl.service.transaction.TransactionCoordinator;
 import com.sun.sgs.impl.service.transaction.TransactionHandle;
+import com.sun.sgs.impl.service.data.ReferenceTableUtil;
 
 import com.sun.sgs.impl.sharedutil.LoggerWrapper;
 import com.sun.sgs.impl.sharedutil.PropertiesWrapper;
@@ -649,6 +650,7 @@ final class TransactionSchedulerImpl
 
                         // run the task in the new transactional context
                         task.getTask().run();
+                        ReferenceTableUtil.flushModifiedObjects();
                     } finally {
                         // regardless of the outcome, always clear the current
                         // transaction state before proceeding...
