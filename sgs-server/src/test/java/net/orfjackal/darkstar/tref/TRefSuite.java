@@ -30,6 +30,7 @@ import org.junit.runners.Suite;
         TestCreatingManagedReferencesDuringSerialization.class,
         TestTransparentReferenceIntegration.class,
         TestSerializationHook.class,
+//        TestDataServiceImpl.class,
         TestHookedDataService.class
 })
 public class TRefSuite {
