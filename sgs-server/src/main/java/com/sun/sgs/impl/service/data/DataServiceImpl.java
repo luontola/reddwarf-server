@@ -37,7 +37,6 @@ import com.sun.sgs.impl.sharedutil.PropertiesWrapper;
 import com.sun.sgs.impl.util.AbstractKernelRunnable;
 import com.sun.sgs.impl.util.TransactionContextFactory;
 import com.sun.sgs.impl.util.TransactionContextMap;
-import com.sun.sgs.impl.hook.HookLocator;
 import com.sun.sgs.kernel.ComponentRegistry;
 import com.sun.sgs.kernel.NodeType;
 import com.sun.sgs.kernel.TransactionScheduler;
@@ -45,6 +44,7 @@ import com.sun.sgs.profile.ProfileCollector;
 import com.sun.sgs.service.DataService;
 import com.sun.sgs.service.Transaction;
 import com.sun.sgs.service.TransactionProxy;
+import com.sun.sgs.service.data.SerializationHook;
 import com.sun.sgs.service.store.DataStore;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -264,6 +264,12 @@ public final class DataServiceImpl implements DataService {
     /** Whether to detect object modifications automatically. */
     private boolean detectModifications;
     
+    private SerializationHook serializationHook = new NullSerializationHook();
+
+    public void setSerializationHook(SerializationHook serializationHook) {
+        this.serializationHook = serializationHook;
+    }
+
     /**
      * Defines the transaction context map for this class.  This class checks
      * the service state and the reference table whenever the context is
@@ -311,10 +317,11 @@ public final class DataServiceImpl implements DataService {
 			"Service is shutting down");
 		}
 	    }
-	    return new Context(
-		DataServiceImpl.this, store, txn, debugCheckInterval,
-		detectModifications, classesTable, trackStaleObjects);
-	}
+            return new Context(
+                    DataServiceImpl.this, store, txn, debugCheckInterval,
+                    detectModifications, classesTable, trackStaleObjects,
+                    serializationHook);
+        }
     }
 
     /**
@@ -486,7 +493,6 @@ public final class DataServiceImpl implements DataService {
 
     /** {@inheritDoc} */
      public void setBinding(String name, Object object) {
-        object = HookLocator.getManagedObjectReplacementHook().replaceManagedObject(object);
          serviceStats.setBindingOp.report();
 	 setBindingInternal(name, object, false);
     }
@@ -505,7 +511,6 @@ public final class DataServiceImpl implements DataService {
 
     /** {@inheritDoc} */
     public void removeObject(Object object) {
-        object = HookLocator.getManagedObjectReplacementHook().replaceManagedObject(object);
         serviceStats.removeObjOp.report();
 	Context context = null;
 	ManagedReferenceImpl<?> ref = null;
@@ -546,7 +551,6 @@ public final class DataServiceImpl implements DataService {
 
     /** {@inheritDoc} */
     public void markForUpdate(Object object) {
-        object = HookLocator.getManagedObjectReplacementHook().replaceManagedObject(object);
         serviceStats.markForUpdateOp.report();
 	Context context = null;
 	ManagedReferenceImpl<?> ref = null;
@@ -579,7 +583,6 @@ public final class DataServiceImpl implements DataService {
 
     /** {@inheritDoc} */
     public <T> ManagedReference<T> createReference(T object) {
-        object = HookLocator.getManagedObjectReplacementHook().replaceManagedObject(object);
         serviceStats.createRefOp.report();
 	Context context = null;
 	try {
@@ -608,7 +611,6 @@ public final class DataServiceImpl implements DataService {
 
     /** {@inheritDoc} */
     public BigInteger getObjectId(Object object) {
-        object = HookLocator.getManagedObjectReplacementHook().replaceManagedObject(object);
 	serviceStats.getObjectIdOp.report();
 	Context context = null;
 	try {
