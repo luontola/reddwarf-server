@@ -21,13 +21,18 @@ package net.orfjackal.darkstar.tref;
 
 import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.auth.Identity;
+import com.sun.sgs.impl.kernel.StandardProperties;
 import com.sun.sgs.kernel.TransactionScheduler;
 import com.sun.sgs.service.DataService;
-import com.sun.sgs.test.util.*;
-import net.orfjackal.dimdwarf.api.internal.EntityApi;
-import org.junit.*;
-
+import com.sun.sgs.test.util.SgsTestNode;
+import com.sun.sgs.test.util.TestAbstractKernelRunnable;
 import java.io.Serializable;
+import java.util.Properties;
+import net.orfjackal.dimdwarf.api.internal.EntityApi;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author Esko Luontola
@@ -40,13 +45,13 @@ public class TestTransparentReferenceIntegration extends Assert {
     private Identity taskOwner;
 
     private final EntityApi entityApi = new DarkstarEntityApi();
-    private final TransparentReferenceHookInstaller trefHooks = new TransparentReferenceHookInstaller();
 
     @Before
     public void setUp() throws Exception {
-        trefHooks.install();
+        Properties props = SgsTestNode.getDefaultProperties("TestTransparentReferenceIntegration", null, null);
+        props.setProperty(StandardProperties.DATA_SERVICE, TransparentReferenceDataService.class.getName());
 
-        serverNode = new SgsTestNode("TestTransparentReferenceIntegration", null, null);
+        serverNode = new SgsTestNode("TestTransparentReferenceIntegration", null, props);
         txnScheduler = serverNode.getSystemRegistry().getComponent(TransactionScheduler.class);
         dataService = serverNode.getDataService();
         taskOwner = serverNode.getProxy().getCurrentOwner();
@@ -54,11 +59,7 @@ public class TestTransparentReferenceIntegration extends Assert {
 
     @After
     public void tearDown() throws Exception {
-        try {
-            serverNode.shutdown(true);
-        } finally {
-            trefHooks.uninstall();
-        }
+        serverNode.shutdown(true);
     }
 
 

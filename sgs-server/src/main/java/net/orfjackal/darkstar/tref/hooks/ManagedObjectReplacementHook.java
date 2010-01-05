@@ -17,20 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.orfjackal.darkstar.tref;
+package net.orfjackal.darkstar.tref.hooks;
 
-import com.sun.sgs.test.impl.service.data.TestCreatingManagedReferencesDuringSerialization;
-import com.sun.sgs.test.impl.service.data.TestSerializationHook;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+public interface ManagedObjectReplacementHook {
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        TestCreatingManagedReferencesDuringSerialization.class,
-        TestTransparentReferenceIntegration.class,
-        TestSerializationHook.class,
-//        TestDataServiceImpl.class,
-        TestHookedDataService.class
-})
-public class TRefSuite {
+    /**
+     * Allows replacing an object with another right before it is processed by a
+     * method in {@link com.sun.sgs.app.DataManager} that takes a managed object
+     * as a parameter.
+     */
+    <T> T replaceManagedObject(T object);
 }

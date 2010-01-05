@@ -20,9 +20,15 @@
 package net.orfjackal.darkstar.tref;
 
 import com.google.inject.Provider;
-import com.sun.sgs.impl.hook.HookLocator;
-import com.sun.sgs.service.data.ManagedObjectReplacementHook;
+import com.sun.sgs.impl.service.data.DataServiceImpl;
+import com.sun.sgs.kernel.ComponentRegistry;
+import com.sun.sgs.service.DataService;
+import com.sun.sgs.service.TransactionProxy;
 import com.sun.sgs.service.data.SerializationHook;
+import java.util.Properties;
+import net.orfjackal.darkstar.tref.hooks.DelegatingDataService;
+import net.orfjackal.darkstar.tref.hooks.HookedDataService;
+import net.orfjackal.darkstar.tref.hooks.ManagedObjectReplacementHook;
 import net.orfjackal.dimdwarf.api.internal.EntityApi;
 import net.orfjackal.dimdwarf.api.internal.TransparentReference;
 import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
@@ -35,19 +41,28 @@ import net.orfjackal.dimdwarf.serial.SerializationReplacer;
 /**
  * @author Esko Luontola
  */
-public class TransparentReferenceHookInstaller {
+public class TransparentReferenceDataService extends DelegatingDataService {
 
-    private final TrefMoReplacementHook managedObjectReplacementHook;
-    private final TrefSerializationHook serializationHook;
+    public TransparentReferenceDataService(Properties properties,
+                                           ComponentRegistry systemRegistry,
+                                           TransactionProxy txnProxy) throws Exception {
+        super(init(properties, systemRegistry, txnProxy));
+    }
 
-    public TransparentReferenceHookInstaller() {
+    private static DataService init(Properties properties,
+                                    ComponentRegistry systemRegistry,
+                                    TransactionProxy txnProxy) throws Exception {
         EntityApi entityApi = new DarkstarEntityApi();
         EntityReferenceFactory referenceFactory = new EntityReferenceAdapterFactory();
         TransparentReferenceFactory trefFactory = new TransparentReferenceFactoryImpl(providerFor(referenceFactory));
         SerializationReplacer serializationReplacer = new ReplaceEntitiesWithTransparentReferences(trefFactory, entityApi);
 
-        managedObjectReplacementHook = new TrefMoReplacementHook(entityApi);
-        serializationHook = new TrefSerializationHook(serializationReplacer);
+        SerializationHook serializationHook = new TrefSerializationHook(serializationReplacer);
+        ManagedObjectReplacementHook replacementHook = new TrefMoReplacementHook(entityApi);
+
+        DataServiceImpl dataService = new DataServiceImpl(properties, systemRegistry, txnProxy);
+        dataService.setSerializationHook(serializationHook);
+        return new HookedDataService(dataService, replacementHook);
     }
 
     private static <T> Provider<T> providerFor(final T target) {
@@ -57,17 +72,6 @@ public class TransparentReferenceHookInstaller {
             }
         };
     }
-
-    public void install() {
-        HookLocator.setManagedObjectReplacementHook(managedObjectReplacementHook);
-        HookLocator.setSerializationHook(serializationHook);
-    }
-
-    public void uninstall() {
-        HookLocator.setManagedObjectReplacementHook(null);
-        HookLocator.setSerializationHook(null);
-    }
-
 
     private static class TrefSerializationHook implements SerializationHook {
 
@@ -91,6 +95,7 @@ public class TransparentReferenceHookInstaller {
     }
 
     private static class TrefMoReplacementHook implements ManagedObjectReplacementHook {
+        
         private final EntityApi entityApi;
 
         public TrefMoReplacementHook(EntityApi entityApi) {
@@ -110,5 +115,4 @@ public class TransparentReferenceHookInstaller {
             return (T) proxy.getEntity$TREF();
         }
     }
-
 }
