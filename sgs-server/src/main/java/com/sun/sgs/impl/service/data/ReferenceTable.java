@@ -81,9 +81,6 @@ final class ReferenceTable {
     private final Collection<ManagedObject> unregisterAfterFlush =
             new ArrayList<ManagedObject>();
 
-    /** Cached results of the flush. */
-    private FlushInfo flushed;
-
     /**
      * Creates an instance of this class.
      *
@@ -202,9 +199,6 @@ final class ReferenceTable {
      * be modified, or null if none were modified.
      */
     FlushInfo flushModifiedObjects() {
-        if (state == State.CLOSED) {
-            return flushed;
-        }
         int sizeBefore = -1;
         try {
             beginFlush();
@@ -225,7 +219,6 @@ final class ReferenceTable {
                     flushInfo.add(ref.oid, data);
                 }
             }
-            flushed = flushInfo;
             return flushInfo;
         } catch (RuntimeException e) {
             logger.logThrow(Level.WARNING, e,
