@@ -19,7 +19,8 @@
 
 package net.orfjackal.darkstar.tref;
 
-import com.sun.sgs.app.*;
+import com.sun.sgs.app.ManagedReference;
+import com.sun.sgs.service.data.ManagedReferenceFactory;
 import net.orfjackal.dimdwarf.api.internal.EntityReference;
 import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
 
@@ -28,8 +29,14 @@ import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
  */
 public class EntityReferenceAdapterFactory implements EntityReferenceFactory {
 
+    private final ManagedReferenceFactory referenceFactory;
+
+    public EntityReferenceAdapterFactory(ManagedReferenceFactory referenceFactory) {
+        this.referenceFactory = referenceFactory;
+    }
+
     public <T> EntityReference<T> createReference(T entity) {
-        ManagedReference<T> ref = AppContext.getDataManager().createReference(entity);
+        ManagedReference<T> ref = referenceFactory.createReference(entity);
         return new EntityReferenceAdapter<T>(ref);
     }
 }

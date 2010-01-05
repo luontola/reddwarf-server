@@ -24,7 +24,9 @@ import com.sun.sgs.impl.service.data.DataServiceImpl;
 import com.sun.sgs.kernel.ComponentRegistry;
 import com.sun.sgs.service.DataService;
 import com.sun.sgs.service.TransactionProxy;
+import com.sun.sgs.service.data.ManagedReferenceFactory;
 import com.sun.sgs.service.data.SerializationHook;
+import com.sun.sgs.service.data.SerializationHookFactory;
 import java.util.Properties;
 import net.orfjackal.darkstar.tref.hooks.DelegatingDataService;
 import net.orfjackal.darkstar.tref.hooks.HookedDataService;
@@ -33,7 +35,6 @@ import net.orfjackal.dimdwarf.api.internal.EntityApi;
 import net.orfjackal.dimdwarf.api.internal.TransparentReference;
 import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
 import net.orfjackal.dimdwarf.entities.tref.ReplaceEntitiesWithTransparentReferences;
-import net.orfjackal.dimdwarf.entities.tref.TransparentReferenceFactory;
 import net.orfjackal.dimdwarf.entities.tref.TransparentReferenceFactoryImpl;
 import net.orfjackal.dimdwarf.serial.MetadataBuilder;
 import net.orfjackal.dimdwarf.serial.SerializationReplacer;
@@ -53,24 +54,9 @@ public class TransparentReferenceDataService extends DelegatingDataService {
                                     ComponentRegistry systemRegistry,
                                     TransactionProxy txnProxy) throws Exception {
         EntityApi entityApi = new DarkstarEntityApi();
-        EntityReferenceFactory referenceFactory = new EntityReferenceAdapterFactory();
-        TransparentReferenceFactory trefFactory = new TransparentReferenceFactoryImpl(providerFor(referenceFactory));
-        SerializationReplacer serializationReplacer = new ReplaceEntitiesWithTransparentReferences(trefFactory, entityApi);
-
-        SerializationHook serializationHook = new TrefSerializationHook(serializationReplacer);
-        ManagedObjectReplacementHook replacementHook = new TrefMoReplacementHook(entityApi);
-
         DataServiceImpl dataService = new DataServiceImpl(properties, systemRegistry, txnProxy);
-        dataService.setSerializationHook(serializationHook);
-        return new HookedDataService(dataService, replacementHook);
-    }
-
-    private static <T> Provider<T> providerFor(final T target) {
-        return new Provider<T>() {
-            public T get() {
-                return target;
-            }
-        };
+        dataService.setSerializationHookFactory(new TrefSerializationHookFactory(entityApi));
+        return new HookedDataService(dataService, new TrefMoReplacementHook(entityApi));
     }
 
     private static class TrefSerializationHook implements SerializationHook {
@@ -95,7 +81,7 @@ public class TransparentReferenceDataService extends DelegatingDataService {
     }
 
     private static class TrefMoReplacementHook implements ManagedObjectReplacementHook {
-        
+
         private final EntityApi entityApi;
 
         public TrefMoReplacementHook(EntityApi entityApi) {
@@ -113,6 +99,38 @@ public class TransparentReferenceDataService extends DelegatingDataService {
         private <T> T unwrapProxy(T object) {
             TransparentReference proxy = (TransparentReference) object;
             return (T) proxy.getEntity$TREF();
+        }
+    }
+
+    private static class TrefSerializationHookFactory implements SerializationHookFactory {
+
+        private final EntityApi entityApi;
+        private final ThreadLocalProvider<EntityReferenceFactory> threadLocalReferenceFactory;
+        private final TransparentReferenceFactoryImpl trefFactory;
+
+        public TrefSerializationHookFactory(EntityApi entityApi) {
+            this.entityApi = entityApi;
+            threadLocalReferenceFactory = new ThreadLocalProvider<EntityReferenceFactory>();
+            trefFactory = new TransparentReferenceFactoryImpl(threadLocalReferenceFactory);
+        }
+
+        @Override public SerializationHook create(ManagedReferenceFactory referenceFactory) {
+            threadLocalReferenceFactory.set(new EntityReferenceAdapterFactory(referenceFactory));
+            SerializationReplacer serializationReplacer = new ReplaceEntitiesWithTransparentReferences(trefFactory, entityApi);
+            return new TrefSerializationHook(serializationReplacer);
+        }
+    }
+
+    private static class ThreadLocalProvider<T> implements Provider<T> {
+        
+        private final ThreadLocal<T> threadLocal = new ThreadLocal<T>();
+
+        public void set(T value) {
+            threadLocal.set(value);
+        }
+
+        @Override public T get() {
+            return threadLocal.get();
         }
     }
 }
