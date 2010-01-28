@@ -20,7 +20,7 @@
 package net.orfjackal.darkstar.tref;
 
 import com.sun.sgs.app.ManagedReference;
-import com.sun.sgs.service.data.ManagedReferenceFactory;
+import com.sun.sgs.service.data.SerializationHookUtil;
 import net.orfjackal.dimdwarf.api.internal.EntityReference;
 import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
 
@@ -29,14 +29,14 @@ import net.orfjackal.dimdwarf.entities.EntityReferenceFactory;
  */
 public class EntityReferenceAdapterFactory implements EntityReferenceFactory {
 
-    private final ManagedReferenceFactory referenceFactory;
+    private final SerializationHookUtil util;
 
-    public EntityReferenceAdapterFactory(ManagedReferenceFactory referenceFactory) {
-        this.referenceFactory = referenceFactory;
+    public EntityReferenceAdapterFactory(SerializationHookUtil util) {
+        this.util = util;
     }
 
     public <T> EntityReference<T> createReference(T entity) {
-        ManagedReference<T> ref = referenceFactory.createReference(entity);
+        ManagedReference<T> ref = util.createReference(entity);
         return new EntityReferenceAdapter<T>(ref);
     }
 }

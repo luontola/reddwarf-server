@@ -24,9 +24,9 @@ import com.sun.sgs.impl.service.data.DataServiceImpl;
 import com.sun.sgs.kernel.ComponentRegistry;
 import com.sun.sgs.service.DataService;
 import com.sun.sgs.service.TransactionProxy;
-import com.sun.sgs.service.data.ManagedReferenceFactory;
 import com.sun.sgs.service.data.SerializationHook;
 import com.sun.sgs.service.data.SerializationHookFactory;
+import com.sun.sgs.service.data.SerializationHookUtil;
 import java.util.Properties;
 import net.orfjackal.darkstar.tref.hooks.DelegatingDataService;
 import net.orfjackal.darkstar.tref.hooks.HookedDataService;
@@ -114,8 +114,8 @@ public class TransparentReferenceDataService extends DelegatingDataService {
             trefFactory = new TransparentReferenceFactoryImpl(threadLocalReferenceFactory);
         }
 
-        @Override public SerializationHook create(ManagedReferenceFactory referenceFactory) {
-            threadLocalReferenceFactory.set(new EntityReferenceAdapterFactory(referenceFactory));
+        public SerializationHook create(SerializationHookUtil util) {
+            threadLocalReferenceFactory.set(new EntityReferenceAdapterFactory(util));
             SerializationReplacer serializationReplacer = new ReplaceEntitiesWithTransparentReferences(trefFactory, entityApi);
             return new TrefSerializationHook(serializationReplacer);
         }
@@ -129,7 +129,7 @@ public class TransparentReferenceDataService extends DelegatingDataService {
             threadLocal.set(value);
         }
 
-        @Override public T get() {
+        public T get() {
             return threadLocal.get();
         }
     }
