@@ -1,5 +1,6 @@
 /*
  * Copyright 2007-2010 Sun Microsystems, Inc.
+ * Copyright 2010 Esko Luontola
  *
  * This file is part of Project Darkstar Server.
  *
